@@ -296,6 +296,27 @@
   /* ── SWIPE ── */
   .swipe-area { touch-action: pan-y; }
 
+  /* ── HOME BUTTON ── */
+  .home-btn-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 8px 12px 24px;
+  }
+  .home-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    padding: 9px 28px;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    color: var(--accent);
+    cursor: pointer;
+    transition: background .15s, transform .1s, border-color .15s;
+  }
+  .home-btn:active { transform: scale(.95); background: var(--border); border-color: var(--accent)44; }
+
   /* ── FADE IN ── */
   .grid, .summary, .upcoming-list { animation: fadeUp .25s ease both; }
   @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
@@ -341,6 +362,10 @@
 
 <div class="section-title" id="upcomingTitle" style="display:none">Ближайшие смены</div>
 <div class="upcoming-list" id="upcomingList"></div>
+
+<div class="home-btn-wrap">
+  <button class="home-btn" onclick="goHome()">Домой</button>
+</div>
 
 <script>
 const tg = window.Telegram?.WebApp;
@@ -604,6 +629,9 @@ document.querySelector('.swipe-area')?.addEventListener('touchend', e => {
 }, {passive:true});
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
+function goHome() {
+  window.location.href = 'https://bejteldaniil2-dev.github.io/shift-calendar/index.html';
+}
 initData();
 </script>
 </body>
