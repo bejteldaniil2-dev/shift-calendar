@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ESnow — График смен</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Golos+Text:wght@400;500;600&display=swap');
+
+  :root {
+    --bg:       #0d0d0f;
+    --surface:  #17171b;
+    --card:     #1e1e24;
+    --border:   #2a2a34;
+    --day-clr:  #f5a623;
+    --night-clr:#6c8eff;
+    --today-clr:#30d158;
+    --off-clr:  #2a2a34;
+    --text:     #f0f0f5;
+    --muted:    #6b6b7e;
+    --accent:   #f5a623;
+    --radius:   14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Golos Text', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    padding: 18px 16px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: var(--accent);
+    opacity: .9;
+  }
+  .legend {
+    display: flex;
+    gap: 12px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-day   { background: var(--day-clr); }
+  .dot-night { background: var(--night-clr); }
+  .dot-today { background: var(--today-clr); }
+
+  /* ── MONTH NAV ── */
+  .month-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 10px;
+  }
+  .nav-btn {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .15s, border-color .15s, transform .1s;
+    flex-shrink: 0;
+  }
+  .nav-btn:active { transform: scale(.9); background: var(--border); }
+  .nav-btn:disabled { opacity: .3; cursor: default; }
+  .month-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+    letter-spacing: .02em;
+    line-height: 1.2;
+  }
+  .month-title small {
+    display: block;
+    font-family: 'Golos Text', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--muted);
+    letter-spacing: .04em;
+    margin-top: 2px;
+  }
+
+  /* ── WEEKDAYS ── */
+  .weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 0 12px;
+    margin-bottom: 6px;
+  }
+  .weekday {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: .06em;
+    padding: 4px 0;
+    text-transform: uppercase;
+  }
+  .weekday:last-child, .weekday:nth-child(6) { color: #ff6b6b44; }
+
+  /* ── GRID ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    padding: 0 12px;
+  }
+
+  .cell {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    transition: transform .12s, box-shadow .12s;
+    background: var(--surface);
+    border: 1.5px solid transparent;
+    overflow: hidden;
+    gap: 2px;
+  }
+  .cell:active { transform: scale(.92); }
+  .cell.empty { background: transparent; border-color: transparent; cursor: default; }
+  .cell.empty:active { transform: none; }
+
+  .cell-num {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    z-index: 1;
+  }
+  .cell-tag {
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    z-index: 1;
+    opacity: .85;
+  }
+
+  /* states */
+  .cell.today {
+    border-color: var(--today-clr);
+    box-shadow: 0 0 0 1px var(--today-clr)33;
+  }
+  .cell.today .cell-num { color: var(--today-clr); }
+
+  .cell.day-shift {
+    background: linear-gradient(145deg, #2d200a, #1e1e24);
+    border-color: var(--day-clr)55;
+  }
+  .cell.day-shift .cell-num { color: var(--day-clr); }
+  .cell.day-shift .cell-tag { color: var(--day-clr); }
+  .cell.day-shift::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 0%, var(--day-clr)18 0%, transparent 70%);
+  }
+
+  .cell.night-shift {
+    background: linear-gradient(145deg, #0f1428, #1e1e24);
+    border-color: var(--night-clr)55;
+  }
+  .cell.night-shift .cell-num { color: var(--night-clr); }
+  .cell.night-shift .cell-tag { color: var(--night-clr); }
+  .cell.night-shift::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 0%, var(--night-clr)18 0%, transparent 70%);
+  }
+
+  .cell.today.day-shift   { border-color: var(--day-clr); box-shadow: 0 0 12px var(--day-clr)33; }
+  .cell.today.night-shift { border-color: var(--night-clr); box-shadow: 0 0 12px var(--night-clr)33; }
+
+  .cell.off { background: var(--off-clr); border-color: transparent; }
+  .cell.off .cell-num { color: var(--muted); font-weight: 400; }
+
+  /* ── SUMMARY CARDS ── */
+  .summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 16px 12px 8px;
+  }
+  .summary-full { grid-column: 1 / -1; }
+  .scard {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .scard-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .scard-val {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .scard-val.day   { color: var(--day-clr); }
+  .scard-val.night { color: var(--night-clr); }
+  .scard-val.total { color: var(--text); }
+  .scard-val.earned{ color: var(--today-clr); }
+  .scard-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* ── UPCOMING ── */
+  .section-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 4px 12px 8px;
+  }
+  .upcoming-list { padding: 0 12px 24px; display: flex; flex-direction: column; gap: 8px; }
+  .shift-row {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .shift-row.day-row   { border-left: 3px solid var(--day-clr); }
+  .shift-row.night-row { border-left: 3px solid var(--night-clr); }
+  .shift-icon { font-size: 20px; flex-shrink: 0; }
+  .shift-info { flex: 1; }
+  .shift-date { font-weight: 600; font-size: 14px; }
+  .shift-time { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .shift-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .badge-day   { background: var(--day-clr)22; color: var(--day-clr); }
+  .badge-night { background: var(--night-clr)22; color: var(--night-clr); }
+  .badge-today { background: var(--today-clr)22; color: var(--today-clr); }
+
+  /* ── EMPTY ── */
+  .empty-state {
+    text-align: center;
+    padding: 40px 24px;
+    color: var(--muted);
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; line-height: 1.5; }
+
+  /* ── SHIMMER loading ── */
+  .shimmer {
+    background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+    border-radius: 8px;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  /* ── SWIPE ── */
+  .swipe-area { touch-action: pan-y; }
+
+  /* ── FADE IN ── */
+  .grid, .summary, .upcoming-list { animation: fadeUp .25s ease both; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+  /* Telegram theming */
+  body.tg-theme {
+    --bg: var(--tg-theme-bg-color, #0d0d0f);
+    --surface: var(--tg-theme-secondary-bg-color, #17171b);
+    --text: var(--tg-theme-text-color, #f0f0f5);
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">ESNOW</div>
+  <div class="legend">
+    <span><span class="dot dot-day"></span>День</span>
+    <span><span class="dot dot-night"></span>Ночь</span>
+    <span><span class="dot dot-today"></span>Сегодня</span>
+  </div>
+</div>
+
+<div class="month-nav">
+  <button class="nav-btn" id="prevBtn" onclick="changeMonth(-1)">‹</button>
+  <div class="month-title" id="monthTitle">—<small>&nbsp;</small></div>
+  <button class="nav-btn" id="nextBtn" onclick="changeMonth(1)">›</button>
+</div>
+
+<div class="weekdays">
+  <div class="weekday">Пн</div>
+  <div class="weekday">Вт</div>
+  <div class="weekday">Ср</div>
+  <div class="weekday">Чт</div>
+  <div class="weekday">Пт</div>
+  <div class="weekday">Сб</div>
+  <div class="weekday">Вс</div>
+</div>
+
+<div class="grid swipe-area" id="grid"></div>
+
+<div class="summary" id="summary"></div>
+
+<div class="section-title" id="upcomingTitle" style="display:none">Ближайшие смены</div>
+<div class="upcoming-list" id="upcomingList"></div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+// ── PARSE DATA ──────────────────────────────────────────────────────────────
+let allShifts = {}; // { "YYYY-MM-DD": {type, time_start, time_end, earned} }
+let months = [];
+let curIdx = 0;
+
+function parseData() {
+  try {
+    // Читаем данные из URL-хэша (#data=BASE64)
+    const hash = location.hash;
+    const match = hash.match(/[#&]data=([^&]+)/);
+    if (match) {
+      // Восстанавливаем паддинг base64
+      let b64 = match[1].replace(/-/g,'+').replace(/_/g,'/');
+      while (b64.length % 4) b64 += '=';
+      const decoded = atob(b64);
+      const json = JSON.parse(decoded);
+      if (json.shifts) {
+        json.shifts.forEach(s => { allShifts[s.date] = s; });
+      }
+    }
+  } catch(e) { console.warn('Parse error:', e); }
+
+  // Если данных нет — показываем пустой календарь текущего месяца
+  if (Object.keys(allShifts).length === 0 && !location.hash.includes('demo')) {
+    // пустой календарь
+  }
+
+  // demo=1 в хэше — показать тестовые данные
+  if (location.hash.includes('demo=1')) {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    const demo = [
+      [1,'день'],[2,'день'],[5,'ночь'],[6,'ночь'],[13,'день'],
+      [14,'день'],[19,'ночь'],[20,'ночь'],[25,'день'],[26,'день'],
+    ];
+    demo.forEach(([d,type]) => {
+      const date = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const ts = type==='день' ? '08:30' : '20:30';
+      const te = type==='день' ? '20:30' : '08:30';
+      allShifts[date] = {type, time_start:ts, time_end:te};
+    });
+  }
+
+  // Собираем список месяцев
+  const monthSet = new Set(Object.keys(allShifts).map(d => d.slice(0,7)));
+  const today = new Date();
+  monthSet.add(`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`);
+  months = Array.from(monthSet).sort();
+  curIdx = months.indexOf(`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`);
+  if (curIdx < 0) curIdx = months.length - 1;
+}
+
+// ── RENDER ──────────────────────────────────────────────────────────────────
+const MONTH_RU = ['Январь','Февраль','Март','Апрель','Май','Июнь',
+                  'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
+function render() {
+  const ym = months[curIdx];
+  const [y, m] = ym.split('-').map(Number);
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+  // Month title
+  document.getElementById('monthTitle').innerHTML =
+    `${MONTH_RU[m-1]}<small>${y}</small>`;
+
+  // Nav buttons
+  document.getElementById('prevBtn').disabled = curIdx === 0;
+  document.getElementById('nextBtn').disabled = curIdx === months.length - 1;
+
+  // Build grid
+  const firstDay = new Date(y, m-1, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1; // Mon=0
+
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  grid.style.animation = 'none'; grid.offsetHeight; grid.style.animation = '';
+
+  for (let i = 0; i < startOffset; i++) {
+    const el = document.createElement('div');
+    el.className = 'cell empty';
+    grid.appendChild(el);
+  }
+
+  let dayShifts = 0, nightShifts = 0, totalEarned = 0;
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const shift = allShifts[dateStr];
+    const isToday = dateStr === todayStr;
+
+    const el = document.createElement('div');
+    let cls = 'cell';
+    if (shift) {
+      cls += shift.type === 'день' ? ' day-shift' : ' night-shift';
+      if (shift.type === 'день') dayShifts++;
+      else nightShifts++;
+      if (shift.earned) totalEarned += shift.earned;
+    } else {
+      cls += ' off';
+    }
+    if (isToday) cls += ' today';
+    el.className = cls;
+
+    const numEl = document.createElement('div');
+    numEl.className = 'cell-num';
+    numEl.textContent = d;
+    el.appendChild(numEl);
+
+    if (shift) {
+      const tag = document.createElement('div');
+      tag.className = 'cell-tag';
+      tag.textContent = shift.type === 'день' ? 'день' : 'ночь';
+      el.appendChild(tag);
+    }
+
+    if (shift) {
+      el.addEventListener('click', () => showShiftDetail(dateStr, shift, isToday));
+    }
+    grid.appendChild(el);
+  }
+
+  // Summary cards — только счётчики смен
+  const total = dayShifts + nightShifts;
+  const summary = document.getElementById('summary');
+  summary.style.animation = 'none'; summary.offsetHeight; summary.style.animation = '';
+  summary.innerHTML = `
+    <div class="scard">
+      <div class="scard-label">☀️ Дневных</div>
+      <div class="scard-val day">${dayShifts}</div>
+      <div class="scard-sub">смен в месяце</div>
+    </div>
+    <div class="scard">
+      <div class="scard-label">🌙 Ночных</div>
+      <div class="scard-val night">${nightShifts}</div>
+      <div class="scard-sub">смен в месяце</div>
+    </div>
+    <div class="scard summary-full">
+      <div class="scard-label">📋 Итого — ${MONTH_RU[m-1]} ${y}</div>
+      <div class="scard-val total">${total}</div>
+      <div class="scard-sub">${total === 0 ? 'Смен нет. Добавьте их в боте.' : `${dayShifts > 0 ? dayShifts + ' дн.' : ''}${dayShifts > 0 && nightShifts > 0 ? ' + ' : ''}${nightShifts > 0 ? nightShifts + ' ноч.' : ''}`}</div>
+    </div>
+  `;
+
+  // Ближайшие смены (следующие 7 дней)
+  renderUpcoming(todayStr);
+}
+
+function renderUpcoming(todayStr) {
+  const list = document.getElementById('upcomingList');
+  const title = document.getElementById('upcomingTitle');
+  const today = new Date();
+  const upcoming = [];
+  for (let i = 0; i <= 13; i++) {
+    const d = new Date(today); d.setDate(today.getDate() + i);
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (allShifts[ds]) upcoming.push({date: ds, shift: allShifts[ds], isToday: ds===todayStr});
+  }
+
+  if (upcoming.length === 0) { list.innerHTML = ''; title.style.display='none'; return; }
+  title.style.display = 'block';
+  list.style.animation = 'none'; list.offsetHeight; list.style.animation = '';
+  list.innerHTML = upcoming.map(({date, shift, isToday}) => {
+    const [y,m,d] = date.split('-');
+    const dateObj = new Date(y, m-1, d);
+    const dayNames = ['вс','пн','вт','ср','чт','пт','сб'];
+    const dayName = dayNames[dateObj.getDay()];
+    const dateLabel = isToday ? 'Сегодня' : `${d}.${m} (${dayName})`;
+    const isDay = shift.type === 'день';
+    const badgeCls = isToday ? 'badge-today' : (isDay ? 'badge-day' : 'badge-night');
+    const badgeText = isToday ? 'СЕГОДНЯ' : (isDay ? 'ДЕНЬ' : 'НОЧЬ');
+    return `
+      <div class="shift-row ${isDay ? 'day-row' : 'night-row'}">
+        <div class="shift-icon">${isDay ? '☀️' : '🌙'}</div>
+        <div class="shift-info">
+          <div class="shift-date">${dateLabel}</div>
+          <div class="shift-time">${shift.time_start} — ${shift.time_end}${shift.earned ? ` · ≈${Math.round(shift.earned).toLocaleString('ru-RU')} ₽` : ''}</div>
+        </div>
+        <div class="shift-badge ${badgeCls}">${badgeText}</div>
+      </div>`;
+  }).join('');
+}
+
+function showShiftDetail(dateStr, shift, isToday) {
+  const [y,m,d] = dateStr.split('-');
+  const isDay = shift.type === 'день';
+  const label = `${d}.${m}.${y}`;
+  const earnedStr = shift.earned ? `\n💰 Заработок: ≈${Math.round(shift.earned).toLocaleString('ru-RU')} ₽` : '';
+  const totalStr = shift.total ? `\n📊 Касса: ${Math.round(shift.total).toLocaleString('ru-RU')} ₽` : '';
+  const msg = `${isDay ? '☀️' : '🌙'} ${shift.type.charAt(0).toUpperCase()+shift.type.slice(1)} смена\n📅 ${label}\n🕐 ${shift.time_start} — ${shift.time_end}${totalStr}${earnedStr}`;
+  if (tg) {
+    tg.showPopup({ title: 'Смена', message: msg, buttons: [{type:'close'}] });
+  } else { alert(msg); }
+}
+
+// ── NAVIGATION ───────────────────────────────────────────────────────────────
+function changeMonth(dir) {
+  const newIdx = curIdx + dir;
+  if (newIdx < 0 || newIdx >= months.length) return;
+  curIdx = newIdx;
+  render();
+}
+
+// ── SWIPE ───────────────────────────────────────────────────────────────────
+let touchStartX = 0;
+document.querySelector('.swipe-area')?.addEventListener('touchstart', e => {
+  touchStartX = e.touches[0].clientX;
+}, {passive:true});
+document.querySelector('.swipe-area')?.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 50) changeMonth(dx < 0 ? 1 : -1);
+}, {passive:true});
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+parseData();
+render();
+</script>
+</body>
+</html>
