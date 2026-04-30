@@ -320,6 +320,65 @@
   .stat-label { font-size: 10px; color: var(--muted); margin-top: 4px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
 
   @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+
+  /* ── TOILET TOGGLE ── */
+  .toilet-card {
+    margin: 10px 20px 0;
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    animation: fadeUp .5s .2s ease both;
+    cursor: pointer;
+  }
+  .toilet-card:active { background: var(--surface); }
+  .toilet-left { display: flex; align-items: center; gap: 10px; flex: 1; }
+  .toilet-icon { font-size: 20px; flex-shrink: 0; }
+  .toilet-info { flex: 1; }
+  .toilet-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .toilet-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* Apple-style toggle */
+  .apple-toggle {
+    position: relative;
+    width: 51px;
+    height: 31px;
+    flex-shrink: 0;
+  }
+  .apple-toggle input { display: none; }
+  .apple-slider {
+    position: absolute;
+    inset: 0;
+    border-radius: 31px;
+    background: #3a3a44;
+    transition: background .25s cubic-bezier(.4,0,.2,1);
+    cursor: pointer;
+  }
+  .apple-slider::before {
+    content: '';
+    position: absolute;
+    width: 27px; height: 27px;
+    left: 2px; top: 2px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 6px #00000050;
+    transition: transform .25s cubic-bezier(.4,0,.2,1);
+  }
+  .apple-toggle input:checked + .apple-slider {
+    background: #30d158;
+  }
+  .apple-toggle input:checked + .apple-slider::before {
+    transform: translateX(20px);
+  }
 </style>
 </head>
 <body>
@@ -382,6 +441,21 @@
   </div>
 </div>
 
+<!-- НАПОМИНАНИЯ ТУАЛЕТ -->
+<div class="toilet-card" onclick="toggleToilet()">
+  <div class="toilet-left">
+    <div class="toilet-icon">🚽</div>
+    <div class="toilet-info">
+      <div class="toilet-title">Напоминания туалет</div>
+      <div class="toilet-sub" id="toiletSub">Каждый час в течение смены</div>
+    </div>
+  </div>
+  <label class="apple-toggle" onclick="event.stopPropagation()">
+    <input type="checkbox" id="toiletToggle" onchange="onToiletChange(this.checked)">
+    <span class="apple-slider"></span>
+  </label>
+</div>
+
 <!-- СТАТИСТИКА -->
 <div class="stats-row">
   <div class="stat-card">
@@ -410,7 +484,7 @@ const MONTH_RU_GEN = ['Январь','Февраль','Март','Апрель',
 const DAY_RU = ['вс','пн','вт','ср','чт','пт','сб'];
 
 /* __HOME_DATA_START__ */
-const HOME_DATA = {"shifts":[{"date":"2026-04-05","type":"ночь","time_start":"20:30","time_end":"08:30","earned":0},{"date":"2026-04-06","type":"ночь","time_start":"20:30","time_end":"08:30","earned":988.2},{"date":"2026-04-07","type":"ночь","time_start":"20:30","time_end":"08:30","earned":1652.4},{"date":"2026-04-11","type":"день","time_start":"08:30","time_end":"20:30","earned":0},{"date":"2026-04-12","type":"день","time_start":"08:30","time_end":"20:30","earned":2804.58},{"date":"2026-04-13","type":"ночь","time_start":"20:30","time_end":"08:30","earned":0},{"date":"2026-04-16","type":"день","time_start":"08:30","time_end":"20:30","earned":0},{"date":"2026-04-17","type":"день","time_start":"08:30","time_end":"20:30","earned":0},{"date":"2026-04-18","type":"ночь","time_start":"20:30","time_end":"08:30","earned":0},{"date":"2026-04-19","type":"ночь","time_start":"20:30","time_end":"08:30","earned":0},{"date":"2026-04-21","type":"ночь","time_start":"20:30","time_end":"08:30","earned":0},{"date":"2026-04-22","type":"ночь","time_start":"20:30","time_end":"08:30","earned":1563.57},{"date":"2026-04-28","type":"день","time_start":"08:30","time_end":"20:30","earned":1485.45},{"date":"2026-04-29","type":"день","time_start":"08:30","time_end":"20:30","earned":1579.05},{"date":"2026-04-30","type":"ночь","time_start":"20:30","time_end":"08:30","earned":0},{"date":"2026-05-01","type":"ночь","time_start":"20:30","time_end":"08:30","earned":0},{"date":"2026-05-02","type":"день","time_start":"08:30","time_end":"20:30","earned":0},{"date":"2026-05-06","type":"день","time_start":"08:30","time_end":"20:30","earned":0},{"date":"2026-05-07","type":"день","time_start":"08:30","time_end":"20:30","earned":0},{"date":"2026-05-08","type":"ночь","time_start":"20:30","time_end":"08:30","earned":0},{"date":"2026-05-09","type":"ночь","time_start":"20:30","time_end":"08:30","earned":0},{"date":"2026-05-14","type":"день","time_start":"08:30","time_end":"20:30","earned":0},{"date":"2026-05-15","type":"день","time_start":"08:30","time_end":"20:30","earned":0},{"date":"2026-05-16","type":"ночь","time_start":"20:30","time_end":"08:30","earned":0},{"date":"2026-05-17","type":"ночь","time_start":"20:30","time_end":"08:30","earned":0},{"date":"2026-05-22","type":"день","time_start":"08:30","time_end":"20:30","earned":0},{"date":"2026-05-23","type":"день","time_start":"08:30","time_end":"20:30","earned":0},{"date":"2026-05-24","type":"ночь","time_start":"20:30","time_end":"08:30","earned":0},{"date":"2026-05-25","type":"ночь","time_start":"20:30","time_end":"08:30","earned":0},{"date":"2026-05-29","type":"день","time_start":"08:30","time_end":"20:30","earned":0},{"date":"2026-05-30","type":"день","time_start":"08:30","time_end":"20:30","earned":0},{"date":"2026-05-31","type":"ночь","time_start":"20:30","time_end":"08:30","earned":0},{"date":"2026-06-01","type":"ночь","time_start":"20:30","time_end":"08:30","earned":0}],"net_salary":0,"net_by_month":{"2026-03":1913.4,"2026-02":1276.47,"2026-04":9959.18},"month":"2026-05"};
+const HOME_DATA = {"shifts":[],"net_salary":null,"month":null};
 /* __HOME_DATA_END__ */
 
 function openCalendar() {
@@ -553,6 +627,31 @@ function renderStats(shifts) {
   renderCardForMonth();
 }
 
+// ── ТУАЛЕТ TOGGLE ───────────────────────────────────────────────────────────
+const TOILET_KEY = 'toilet_reminders';
+
+function toggleToilet() {
+  const cb = document.getElementById('toiletToggle');
+  cb.checked = !cb.checked;
+  onToiletChange(cb.checked);
+}
+
+function onToiletChange(enabled) {
+  document.getElementById('toiletSub').textContent =
+    enabled ? '✅ Включено — каждый час в смену' : 'Выключено';
+  // Отправляем боту через sendData
+  if (tg) {
+    tg.sendData(JSON.stringify({ action: 'toilet_toggle', enabled }));
+  }
+}
+
+function initToilet() {
+  const enabled = HOME_DATA.toilet_reminders === 1;
+  document.getElementById('toiletToggle').checked = enabled;
+  document.getElementById('toiletSub').textContent =
+    enabled ? '✅ Включено — каждый час в смену' : 'Выключено';
+}
+
 function init() {
   document.getElementById('headerDate').textContent = formatDate();
 
@@ -562,6 +661,7 @@ function init() {
   renderNextShift(shifts);
   renderCard({ net_salary: netSalary });
   renderStats(shifts);
+  initToilet();
 }
 
 init();
