@@ -31,6 +31,7 @@
     color: var(--text);
     min-height: 100vh;
     overflow-x: hidden;
+    padding-bottom: 72px;
   }
 
   /* ── HEADER ── */
@@ -298,9 +299,11 @@
 
   /* ── HOME BUTTON ── */
   .home-btn-wrap {
-    display: flex;
-    justify-content: center;
-    padding: 8px 12px 24px;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
   }
   .home-btn {
     background: var(--surface);
@@ -314,6 +317,8 @@
     color: var(--accent);
     cursor: pointer;
     transition: background .15s, transform .1s, border-color .15s;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
   }
   .home-btn:active { transform: scale(.95); background: var(--border); border-color: var(--accent)44; }
 
