@@ -357,7 +357,7 @@ const EMBEDDED_SHIFTS = [];
 /* __SHIFTS_END__ */
 
 // URL и секрет API — обновляются автоматически ботом при каждом запуске
-const API_BASE = "https://unbridle-easing-talon.ngrok-free.dev";
+const API_BASE = "";
 const API_SECRET = "esnow_secret_2024";
 
 function buildMonthIndex() {
@@ -394,7 +394,9 @@ async function fetchFromApi(userId) {
   if (!API_BASE) return false;
   try {
     const secretParam = API_SECRET ? `&secret=${encodeURIComponent(API_SECRET)}` : "";
-    const resp = await fetch(`${API_BASE}/api/shifts?user_id=${userId}${secretParam}`);
+    const resp = await fetch(`${API_BASE}/api/shifts?user_id=${userId}${secretParam}`, {
+      headers: { "ngrok-skip-browser-warning": "true" }
+    });
     if (!resp.ok) return false;
     const json = await resp.json();
     if (json.shifts) {
