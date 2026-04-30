@@ -353,28 +353,21 @@ let curIdx = 0;
 
 // __SHIFTS_INJECT__
 /* __SHIFTS_START__ */
-const EMBEDDED_SHIFTS = [{"date": "2026-04-29", "type": "день", "time_start": "08:30", "time_end": "20:30"}, {"date": "2026-04-30", "type": "ночь", "time_start": "20:30", "time_end": "08:30"}, {"date": "2026-05-06", "type": "день", "time_start": "08:30", "time_end": "20:30"}, {"date": "2026-05-07", "type": "день", "time_start": "08:30", "time_end": "20:30"}, {"date": "2026-05-08", "type": "ночь", "time_start": "20:30", "time_end": "08:30"}, {"date": "2026-05-09", "type": "ночь", "time_start": "20:30", "time_end": "08:30"}, {"date": "2026-05-14", "type": "день", "time_start": "08:30", "time_end": "20:30"}, {"date": "2026-05-15", "type": "день", "time_start": "08:30", "time_end": "20:30"}, {"date": "2026-05-16", "type": "ночь", "time_start": "20:30", "time_end": "08:30"}, {"date": "2026-05-17", "type": "ночь", "time_start": "20:30", "time_end": "08:30"}, {"date": "2026-05-22", "type": "день", "time_start": "08:30", "time_end": "20:30"}, {"date": "2026-05-23", "type": "день", "time_start": "08:30", "time_end": "20:30"}, {"date": "2026-05-24", "type": "ночь", "time_start": "20:30", "time_end": "08:30"}, {"date": "2026-05-25", "type": "ночь", "time_start": "20:30", "time_end": "08:30"}];
+const EMBEDDED_SHIFTS = [];
 /* __SHIFTS_END__ */
 
 function parseData() {
-  // Приоритет 1: данные встроены ботом прямо в файл
-  if (EMBEDDED_SHIFTS && EMBEDDED_SHIFTS.length > 0) {
-    EMBEDDED_SHIFTS.forEach(s => { allShifts[s.date] = s; });
-  }
-
-  // Приоритет 2: данные переданы через URL (кнопка из чата бота)
-  if (Object.keys(allShifts).length === 0) {
-    try {
-      const hash = location.hash;
-      const match = hash.match(/[#&]data=([^&]+)/);
-      if (match) {
-        let b64 = match[1].replace(/-/g,'+').replace(/_/g,'/');
-        while (b64.length % 4) b64 += '=';
-        const json = JSON.parse(atob(b64));
-        if (json.shifts) json.shifts.forEach(s => { allShifts[s.date] = s; });
-      }
-    } catch(e) { console.warn('URL parse error:', e); }
-  }
+  // Данные передаются через URL (кнопка из чата бота — персональные данные каждого пользователя)
+  try {
+    const hash = location.hash;
+    const match = hash.match(/[#&]data=([^&]+)/);
+    if (match) {
+      let b64 = match[1].replace(/-/g,'+').replace(/_/g,'/');
+      while (b64.length % 4) b64 += '=';
+      const json = JSON.parse(atob(b64));
+      if (json.shifts) json.shifts.forEach(s => { allShifts[s.date] = s; });
+    }
+  } catch(e) { console.warn('URL parse error:', e); }
 
   // demo=1 — тестовые данные для разработки
   if (location.hash.includes('demo=1')) {
