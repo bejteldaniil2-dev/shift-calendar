@@ -357,12 +357,21 @@ const EMBEDDED_SHIFTS = [];
 /* __SHIFTS_END__ */
 
 function parseData() {
-  // Данные передаются через URL (кнопка из чата бота — персональные данные каждого пользователя)
+  // Данные передаются через URL (?data=... — query param, т.к. Telegram Mini App обрезает #hash)
+  // Также поддерживаем старый формат #data=... для совместимости
   try {
-    const hash = location.hash;
-    const match = hash.match(/[#&]data=([^&]+)/);
-    if (match) {
-      let b64 = match[1].replace(/-/g,'+').replace(/_/g,'/');
+    // Сначала пробуем query string (?data=...)
+    const urlParams = new URLSearchParams(location.search);
+    let b64str = urlParams.get('data');
+
+    // Фолбэк: хэш (#data=...)
+    if (!b64str) {
+      const match = location.hash.match(/[#&]data=([^&]+)/);
+      if (match) b64str = match[1];
+    }
+
+    if (b64str) {
+      let b64 = b64str.replace(/-/g,'+').replace(/_/g,'/');
       while (b64.length % 4) b64 += '=';
       const json = JSON.parse(atob(b64));
       if (json.shifts) json.shifts.forEach(s => { allShifts[s.date] = s; });
