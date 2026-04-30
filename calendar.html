@@ -351,41 +351,39 @@ let allShifts = {}; // { "YYYY-MM-DD": {type, time_start, time_end, earned} }
 let months = [];
 let curIdx = 0;
 
-function parseData() {
-  try {
-    // Читаем данные из URL-хэша (#data=BASE64)
-    const hash = location.hash;
-    const match = hash.match(/[#&]data=([^&]+)/);
-    if (match) {
-      // Восстанавливаем паддинг base64
-      let b64 = match[1].replace(/-/g,'+').replace(/_/g,'/');
-      while (b64.length % 4) b64 += '=';
-      const decoded = atob(b64);
-      const json = JSON.parse(decoded);
-      if (json.shifts) {
-        json.shifts.forEach(s => { allShifts[s.date] = s; });
-      }
-    }
-  } catch(e) { console.warn('Parse error:', e); }
+// __SHIFTS_INJECT__
+/* __SHIFTS_START__ */
+const EMBEDDED_SHIFTS = [];
+/* __SHIFTS_END__ */
 
-  // Если данных нет — показываем пустой календарь текущего месяца
-  if (Object.keys(allShifts).length === 0 && !location.hash.includes('demo')) {
-    // пустой календарь
+function parseData() {
+  // Приоритет 1: данные встроены ботом прямо в файл
+  if (EMBEDDED_SHIFTS && EMBEDDED_SHIFTS.length > 0) {
+    EMBEDDED_SHIFTS.forEach(s => { allShifts[s.date] = s; });
   }
 
-  // demo=1 в хэше — показать тестовые данные
+  // Приоритет 2: данные переданы через URL (кнопка из чата бота)
+  if (Object.keys(allShifts).length === 0) {
+    try {
+      const hash = location.hash;
+      const match = hash.match(/[#&]data=([^&]+)/);
+      if (match) {
+        let b64 = match[1].replace(/-/g,'+').replace(/_/g,'/');
+        while (b64.length % 4) b64 += '=';
+        const json = JSON.parse(atob(b64));
+        if (json.shifts) json.shifts.forEach(s => { allShifts[s.date] = s; });
+      }
+    } catch(e) { console.warn('URL parse error:', e); }
+  }
+
+  // demo=1 — тестовые данные для разработки
   if (location.hash.includes('demo=1')) {
-    const now = new Date();
-    const y = now.getFullYear(), m = now.getMonth();
-    const demo = [
-      [1,'день'],[2,'день'],[5,'ночь'],[6,'ночь'],[13,'день'],
-      [14,'день'],[19,'ночь'],[20,'ночь'],[25,'день'],[26,'день'],
-    ];
-    demo.forEach(([d,type]) => {
+    const now = new Date(); const y = now.getFullYear(), m = now.getMonth();
+    [[1,'день'],[2,'день'],[5,'ночь'],[6,'ночь'],[13,'день'],
+     [14,'день'],[19,'ночь'],[20,'ночь'],[25,'день'],[26,'день']]
+    .forEach(([d,type]) => {
       const date = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const ts = type==='день' ? '08:30' : '20:30';
-      const te = type==='день' ? '20:30' : '08:30';
-      allShifts[date] = {type, time_start:ts, time_end:te};
+      allShifts[date] = {type, time_start: type==='день'?'08:30':'20:30', time_end: type==='день'?'20:30':'08:30'};
     });
   }
 
