@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Открываю календарь…</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0d0d0f;
+    color: #f0f0f5;
+    font-family: -apple-system, sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+  .icon { font-size: 64px; animation: pulse 1s ease infinite alternate; }
+  @keyframes pulse { from{transform:scale(1)} to{transform:scale(1.1)} }
+  p { font-size: 16px; color: #6b6b7e; text-align: center; padding: 0 32px; }
+  .hint { font-size: 13px; color: #3a3a4a; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="icon">📆</div>
+<p>Закрой это окно — бот пришлёт календарь с твоими сменами</p>
+<p class="hint">или напиши боту /calendar</p>
+<script>
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    tg.ready();
+    // Отправляем данные боту и закрываем — бот пришлёт кнопку с календарём
+    tg.sendData("open_calendar");
+    // Небольшая задержка чтобы пользователь увидел экран
+    setTimeout(() => tg.close(), 800);
+  }
+</script>
+</body>
+</html>
