@@ -355,9 +355,13 @@
       <div class="card-balance-sub" id="cardSub">текущий месяц</div>
     </div>
     <div class="card-bottom">
-      <div>
+      <div style="flex:1;">
         <div class="card-month-label">Период</div>
-        <div class="card-month-val" id="cardMonth">—</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:2px;">
+          <button id="cardPrevBtn" onclick="changeCardMonth(-1)" style="width:26px;height:26px;border-radius:50%;border:1px solid #f5a62344;background:#f5a62314;color:var(--accent);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .1s;padding:0;flex-shrink:0;">‹</button>
+          <div class="card-month-val" id="cardMonth">—</div>
+          <button id="cardNextBtn" onclick="changeCardMonth(1)" style="width:26px;height:26px;border-radius:50%;border:1px solid #f5a62344;background:#f5a62314;color:var(--accent);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,transform .1s;padding:0;flex-shrink:0;">›</button>
+        </div>
       </div>
       <div class="card-dots">••••</div>
     </div>
@@ -406,7 +410,7 @@ const MONTH_RU_GEN = ['Январь','Февраль','Март','Апрель',
 const DAY_RU = ['вс','пн','вт','ср','чт','пт','сб'];
 
 /* __HOME_DATA_START__ */
-const HOME_DATA = {"shifts":[{"date":"2026-04-05","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-04-06","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-04-07","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-04-11","type":"день","time_start":"08:30","time_end":"20:30"},{"date":"2026-04-12","type":"день","time_start":"08:30","time_end":"20:30"},{"date":"2026-04-13","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-04-16","type":"день","time_start":"08:30","time_end":"20:30"},{"date":"2026-04-17","type":"день","time_start":"08:30","time_end":"20:30"},{"date":"2026-04-18","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-04-19","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-04-21","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-04-22","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-04-28","type":"день","time_start":"08:30","time_end":"20:30"},{"date":"2026-04-29","type":"день","time_start":"08:30","time_end":"20:30"},{"date":"2026-04-30","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-05-01","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-05-02","type":"день","time_start":"08:30","time_end":"20:30"},{"date":"2026-05-06","type":"день","time_start":"08:30","time_end":"20:30"},{"date":"2026-05-07","type":"день","time_start":"08:30","time_end":"20:30"},{"date":"2026-05-08","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-05-09","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-05-14","type":"день","time_start":"08:30","time_end":"20:30"},{"date":"2026-05-15","type":"день","time_start":"08:30","time_end":"20:30"},{"date":"2026-05-16","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-05-17","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-05-22","type":"день","time_start":"08:30","time_end":"20:30"},{"date":"2026-05-23","type":"день","time_start":"08:30","time_end":"20:30"},{"date":"2026-05-24","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-05-25","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-05-29","type":"день","time_start":"08:30","time_end":"20:30"},{"date":"2026-05-30","type":"день","time_start":"08:30","time_end":"20:30"},{"date":"2026-05-31","type":"ночь","time_start":"20:30","time_end":"08:30"},{"date":"2026-06-01","type":"ночь","time_start":"20:30","time_end":"08:30"}],"net_salary":0.0,"month":"2026-05"};
+const HOME_DATA = {"shifts":[],"net_salary":null,"month":null};
 /* __HOME_DATA_END__ */
 
 function openCalendar() {
@@ -472,38 +476,112 @@ function renderNextShift(shifts) {
   sub.textContent = `${next.time_start} — ${next.time_end} · ${next.type}`;
 }
 
-function renderCard(data) {
+// ── МЕСЯЦ НА КАРТЕ ──────────────────────────────────────────────────────────
+let allShiftsData = [];
+let cardMonthOffset = 0; // 0 = текущий, -1 = прошлый, +1 = следующий
+
+function getCardYM(offset) {
   const now = new Date();
-  const monthLabel = `${MONTH_RU[now.getMonth()]} ${now.getFullYear()}`;
+  const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  return { y: d.getFullYear(), m: d.getMonth() };
+}
+
+function changeCardMonth(dir) {
+  // Определяем доступные месяцы из данных
+  const months = getAvailableMonths();
+  const now = new Date();
+  const curYM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  let curOffsetIdx = months.indexOf(curYM) + cardMonthOffset;
+  const newOffsetIdx = curOffsetIdx + dir;
+
+  // Проверяем границы
+  const newYM = getYMFromOffset(cardMonthOffset + dir);
+  const hasData = allShiftsData.some(s => s.date.startsWith(newYM));
+  const isCurrentOrFuture = newYM >= curYM;
+
+  if (!hasData && !isCurrentOrFuture) return; // нет данных и не текущий/будущий
+
+  cardMonthOffset += dir;
+  renderCardForMonth();
+}
+
+function getYMFromOffset(offset) {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function getAvailableMonths() {
+  const set = new Set(allShiftsData.map(s => s.date.slice(0,7)));
+  const now = new Date();
+  set.add(`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`);
+  return Array.from(set).sort();
+}
+
+function renderCardForMonth() {
+  const ym = getYMFromOffset(cardMonthOffset);
+  const [y, m] = ym.split('-').map(Number);
+  const monthLabel = `${MONTH_RU[m-1]} ${y}`;
   document.getElementById('cardMonth').textContent = monthLabel;
+
+  const monthShifts = allShiftsData.filter(s => s.date.startsWith(ym));
+  const day   = monthShifts.filter(s => s.type === 'день').length;
+  const night = monthShifts.filter(s => s.type === 'ночь').length;
+  const total = day + night;
+
+  // Зарплата за выбранный месяц
+  const netSalary = monthShifts.reduce((sum, s) => sum + (s.earned || 0), 0);
 
   const balanceEl = document.getElementById('cardBalance');
   const subEl = document.getElementById('cardSub');
 
-  if (data.net_salary !== null && data.net_salary > 0) {
-    const formatted = Math.round(data.net_salary).toLocaleString('ru-RU');
+  if (netSalary > 0) {
+    const formatted = Math.round(netSalary).toLocaleString('ru-RU');
     balanceEl.innerHTML = `<span class="balance-amount">${formatted}</span><span class="balance-currency">₽</span>`;
     subEl.textContent = 'чистыми за месяц';
-  } else if (data.net_salary === 0) {
-    balanceEl.innerHTML = `<span class="balance-amount">0</span><span class="balance-currency">₽</span>`;
-    subEl.textContent = 'смен ещё нет';
   } else {
-    balanceEl.innerHTML = `<span class="balance-loading">Нет данных</span>`;
-    subEl.textContent = 'добавьте смены в бот';
+    balanceEl.innerHTML = `<span class="balance-amount">0</span><span class="balance-currency" style="font-size:20px">₽</span>`;
+    subEl.textContent = total > 0 ? 'данные в боте' : 'смен нет';
   }
-}
 
-function renderStats(shifts) {
-  const now = new Date();
-  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const thisMonth = shifts.filter(s => s.date.startsWith(ym));
-  const day   = thisMonth.filter(s => s.type === 'день').length;
-  const night = thisMonth.filter(s => s.type === 'ночь').length;
-  const total = day + night;
+  // Статистика
   document.getElementById('statDay').textContent   = day;
   document.getElementById('statNight').textContent = night;
   document.getElementById('statTotal').textContent = total;
   document.getElementById('shiftCountSub').textContent = `${total} смен в месяце`;
+
+  // Кнопки — скрываем если нет данных ни за прошлый
+  const prevYM = getYMFromOffset(cardMonthOffset - 1);
+  const nextYM = getYMFromOffset(cardMonthOffset + 1);
+  const now = new Date();
+  const curYM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  const hasPrev = allShiftsData.some(s => s.date.startsWith(prevYM));
+  const hasNext = allShiftsData.some(s => s.date.startsWith(nextYM)) || nextYM >= curYM;
+
+  const prevBtn = document.getElementById('cardPrevBtn');
+  const nextBtn = document.getElementById('cardNextBtn');
+  prevBtn.style.opacity = hasPrev ? '1' : '0.25';
+  prevBtn.style.cursor  = hasPrev ? 'pointer' : 'default';
+  nextBtn.style.opacity = hasNext ? '1' : '0.25';
+  nextBtn.style.cursor  = hasNext ? 'pointer' : 'default';
+}
+
+function renderCard(data) {
+  // Если есть net_salary из HOME_DATA — используем как fallback для текущего месяца
+  if (data.net_salary !== null && data.net_salary > 0 && allShiftsData.length === 0) {
+    const now = new Date();
+    document.getElementById('cardMonth').textContent = `${MONTH_RU[now.getMonth()]} ${now.getFullYear()}`;
+    const formatted = Math.round(data.net_salary).toLocaleString('ru-RU');
+    document.getElementById('cardBalance').innerHTML =
+      `<span class="balance-amount">${formatted}</span><span class="balance-currency">₽</span>`;
+    document.getElementById('cardSub').textContent = 'чистыми за месяц';
+  }
+}
+
+function renderStats(shifts) {
+  allShiftsData = shifts;
+  renderCardForMonth();
 }
 
 function init() {
