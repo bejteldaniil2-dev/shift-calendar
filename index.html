@@ -487,6 +487,12 @@ const DAY_RU = ['вс','пн','вт','ср','чт','пт','сб'];
 const HOME_DATA = {"shifts":[],"net_salary":null,"month":null};
 /* __HOME_DATA_END__ */
 
+// URL API — обновляется ботом при каждом запуске
+/* __API_BASE_START__ */
+const API_BASE = "";
+/* __API_BASE_END__ */
+const API_SECRET = "esnow_secret_2024";
+
 function openCalendar() {
   window.location.href = CALENDAR_URL;
 }
@@ -573,12 +579,14 @@ function changeCardMonth(dir) {
   renderCardForMonth();
 }
 
+// Глобальный объект данных — обновляется из API или HOME_DATA
+let liveData = HOME_DATA;
+
 function renderCardForMonth() {
   const ym = getYMFromOffset(cardMonthOffset);
   const [y, m] = ym.split('-').map(Number);
   document.getElementById('cardMonth').textContent = `${MONTH_RU[m-1]} ${y}`;
 
-  // Статистика смен за выбранный месяц
   const monthShifts = allShiftsData.filter(s => s.date.startsWith(ym));
   const day   = monthShifts.filter(s => s.type === 'день').length;
   const night = monthShifts.filter(s => s.type === 'ночь').length;
@@ -588,8 +596,7 @@ function renderCardForMonth() {
   document.getElementById('statTotal').textContent = total;
   document.getElementById('shiftCountSub').textContent = `${total} смен в месяце`;
 
-  // Зарплата чистыми — берём из net_by_month (там уже учтены расходы)
-  const netByMonth = HOME_DATA.net_by_month || {};
+  const netByMonth = liveData.net_by_month || {};
   const netSalary = netByMonth[ym] ?? null;
 
   const balanceEl = document.getElementById('cardBalance');
@@ -605,19 +612,16 @@ function renderCardForMonth() {
     subEl.textContent = total > 0 ? 'нет данных об отчётах' : 'смен нет';
   }
 
-  // Кнопки
   const prevYM = getYMFromOffset(cardMonthOffset - 1);
   const nextYM = getYMFromOffset(cardMonthOffset + 1);
   const now = new Date();
   const curYM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   const hasPrev = netByMonth[prevYM] !== undefined || allShiftsData.some(s => s.date.startsWith(prevYM));
   const hasNext = netByMonth[nextYM] !== undefined || allShiftsData.some(s => s.date.startsWith(nextYM)) || nextYM === curYM;
-  const prevBtn = document.getElementById('cardPrevBtn');
-  const nextBtn = document.getElementById('cardNextBtn');
-  prevBtn.style.opacity = hasPrev ? '1' : '0.25';
-  prevBtn.style.cursor  = hasPrev ? 'pointer' : 'default';
-  nextBtn.style.opacity = hasNext ? '1' : '0.25';
-  nextBtn.style.cursor  = hasNext ? 'pointer' : 'default';
+  document.getElementById('cardPrevBtn').style.opacity = hasPrev ? '1' : '0.25';
+  document.getElementById('cardPrevBtn').style.cursor  = hasPrev ? 'pointer' : 'default';
+  document.getElementById('cardNextBtn').style.opacity = hasNext ? '1' : '0.25';
+  document.getElementById('cardNextBtn').style.cursor  = hasNext ? 'pointer' : 'default';
 }
 
 function renderCard(data) { /* используется renderCardForMonth */ }
@@ -628,8 +632,6 @@ function renderStats(shifts) {
 }
 
 // ── ТУАЛЕТ TOGGLE ───────────────────────────────────────────────────────────
-const TOILET_KEY = 'toilet_reminders';
-
 function toggleToilet() {
   const cb = document.getElementById('toiletToggle');
   cb.checked = !cb.checked;
@@ -639,29 +641,44 @@ function toggleToilet() {
 function onToiletChange(enabled) {
   document.getElementById('toiletSub').textContent =
     enabled ? '✅ Включено — каждый час в смену' : 'Выключено';
-  // Отправляем боту через sendData
   if (tg) {
     tg.sendData(JSON.stringify({ action: 'toilet_toggle', enabled }));
   }
 }
 
-function initToilet() {
-  const enabled = HOME_DATA.toilet_reminders === 1;
+function initToilet(val) {
+  const enabled = (val ?? liveData.toilet_reminders) === 1;
   document.getElementById('toiletToggle').checked = enabled;
   document.getElementById('toiletSub').textContent =
     enabled ? '✅ Включено — каждый час в смену' : 'Выключено';
 }
 
-function init() {
+async function fetchHomeData(userId) {
+  if (!API_BASE) return null;
+  try {
+    const secret = API_SECRET ? `&secret=${encodeURIComponent(API_SECRET)}` : '';
+    const resp = await fetch(`${API_BASE}/api/home?user_id=${userId}${secret}`, {
+      headers: { "ngrok-skip-browser-warning": "true" }
+    });
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch(e) { return null; }
+}
+
+async function init() {
   document.getElementById('headerDate').textContent = formatDate();
 
-  const shifts    = HOME_DATA.shifts    || [];
-  const netSalary = HOME_DATA.net_salary;
+  // Пробуем загрузить свежие данные через API
+  const userId = tg?.initDataUnsafe?.user?.id;
+  if (userId && API_BASE) {
+    const fresh = await fetchHomeData(userId);
+    if (fresh && fresh.shifts) liveData = fresh;
+  }
 
+  const shifts = liveData.shifts || [];
   renderNextShift(shifts);
-  renderCard({ net_salary: netSalary });
   renderStats(shifts);
-  initToilet();
+  initToilet(liveData.toilet_reminders);
 }
 
 init();
