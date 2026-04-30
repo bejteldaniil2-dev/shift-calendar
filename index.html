@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ESnow Job</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=Golos+Text:wght@400;500;600&display=swap');
+
+  :root {
+    --bg:        #0d0d0f;
+    --surface:   #17171b;
+    --card:      #1e1e24;
+    --border:    #2a2a34;
+    --accent:    #f5a623;
+    --day-clr:   #f5a623;
+    --night-clr: #6c8eff;
+    --green:     #30d158;
+    --text:      #f0f0f5;
+    --muted:     #6b6b7e;
+    --radius:    16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Golos Text', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding-bottom: 32px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    padding: 20px 20px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .logo {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: var(--accent);
+  }
+  .header-date {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: .03em;
+  }
+
+  /* ── NEXT SHIFT PILL ── */
+  .next-shift {
+    margin: 18px 20px 0;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: fadeUp .3s ease both;
+  }
+  .next-shift.day-pill   { border-color: var(--day-clr)44; background: linear-gradient(135deg, #1e160400, #1e1e24); }
+  .next-shift.night-pill { border-color: var(--night-clr)44; background: linear-gradient(135deg, #0a0f2000, #1e1e24); }
+  .next-shift.today-pill { border-color: var(--green)66; }
+  .pill-icon { font-size: 22px; flex-shrink: 0; }
+  .pill-info { flex: 1; }
+  .pill-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+  .pill-main {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .pill-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .pill-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-radius: 20px;
+    flex-shrink: 0;
+  }
+  .badge-today { background: var(--green)22; color: var(--green); }
+  .badge-day   { background: var(--day-clr)22; color: var(--day-clr); }
+  .badge-night { background: var(--night-clr)22; color: var(--night-clr); }
+  .badge-off   { background: var(--border); color: var(--muted); }
+
+  /* ── BANK CARD ── */
+  .card-wrap {
+    padding: 16px 20px 0;
+    animation: fadeUp .35s .05s ease both;
+  }
+  .bank-card {
+    width: 100%;
+    border-radius: 22px;
+    padding: 26px 28px 24px;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1a1208 0%, #1e1e24 40%, #0e0e16 100%);
+    border: 1.5px solid #f5a62322;
+    box-shadow: 0 8px 40px #f5a62312, 0 2px 8px #00000060;
+    cursor: default;
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  /* Glow orbs */
+  .bank-card::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #f5a62328 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .bank-card::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: -20px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #6c8eff14 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Chip pattern */
+  .card-chip {
+    width: 36px; height: 28px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #c8a84b, #f5d77e, #c8a84b);
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: 0 1px 4px #00000040;
+  }
+  .card-chip::before {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    border-radius: 3px;
+    border: 1px solid #b8943a66;
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative; z-index: 1;
+  }
+  .card-name {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    color: var(--accent);
+    opacity: .9;
+  }
+
+  .card-middle {
+    position: relative; z-index: 1;
+    margin-top: 18px;
+  }
+  .card-balance-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #f5a62388;
+    margin-bottom: 4px;
+  }
+  .card-balance {
+    font-family: 'Unbounded', sans-serif;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text);
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .balance-amount {
+    font-size: 32px;
+    letter-spacing: -.02em;
+  }
+  .balance-currency {
+    font-size: 16px;
+    color: var(--accent);
+    opacity: .8;
+  }
+  .balance-loading {
+    font-size: 20px;
+    color: var(--muted);
+    font-family: 'Golos Text', sans-serif;
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+  .card-balance-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 5px;
+    letter-spacing: .02em;
+  }
+
+  .card-bottom {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    position: relative; z-index: 1;
+    margin-top: 16px;
+  }
+  .card-month-label {
+    font-size: 10px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #f5a62355;
+    margin-bottom: 2px;
+  }
+  .card-month-val {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: .04em;
+  }
+  .card-dots {
+    font-size: 20px;
+    letter-spacing: .15em;
+    color: var(--accent);
+    opacity: .4;
+    line-height: 1;
+  }
+
+  /* Shimmer on load */
+  .shimmer-line {
+    height: 32px; width: 60%;
+    border-radius: 8px;
+    background: linear-gradient(90deg, #2a2a34 25%, #3a3a44 50%, #2a2a34 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  /* ── QUICK ACTIONS ── */
+  .actions {
+    padding: 16px 20px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    animation: fadeUp .4s .1s ease both;
+  }
+  .action-btn {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    cursor: pointer;
+    transition: transform .12s, background .12s, border-color .12s;
+    text-decoration: none;
+    color: inherit;
+  }
+  .action-btn:active { transform: scale(.96); background: var(--surface); }
+  .action-btn.accent-btn {
+    border-color: var(--accent)44;
+    background: linear-gradient(135deg, #1e150300, #1e1e24);
+  }
+  .action-btn.accent-btn:active { border-color: var(--accent)88; }
+  .action-icon { font-size: 22px; }
+  .action-label {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .action-sub { font-size: 11px; color: var(--muted); }
+
+  /* ── STATS ROW ── */
+  .stats-row {
+    margin: 10px 20px 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    animation: fadeUp .45s .15s ease both;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+  .stat-val {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .stat-val.day   { color: var(--day-clr); }
+  .stat-val.night { color: var(--night-clr); }
+  .stat-val.total { color: var(--text); }
+  .stat-label { font-size: 10px; color: var(--muted); margin-top: 4px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">ESNOW JOB</div>
+  <div class="header-date" id="headerDate"></div>
+</div>
+
+<!-- БЛИЖАЙШАЯ СМЕНА -->
+<div class="next-shift" id="nextShift">
+  <div class="pill-icon" id="pillIcon">⏳</div>
+  <div class="pill-info">
+    <div class="pill-label">Ближайшая смена</div>
+    <div class="pill-main" id="pillMain">Загрузка…</div>
+    <div class="pill-sub" id="pillSub"></div>
+  </div>
+  <div class="pill-badge badge-off" id="pillBadge">—</div>
+</div>
+
+<!-- БАНКОВСКАЯ КАРТА -->
+<div class="card-wrap">
+  <div class="bank-card">
+    <div class="card-top">
+      <div class="card-name">ESnow job</div>
+      <div class="card-chip"></div>
+    </div>
+    <div class="card-middle">
+      <div class="card-balance-label">Зарплата чистыми</div>
+      <div class="card-balance" id="cardBalance">
+        <span class="balance-loading">···</span>
+      </div>
+      <div class="card-balance-sub" id="cardSub">текущий месяц</div>
+    </div>
+    <div class="card-bottom">
+      <div>
+        <div class="card-month-label">Период</div>
+        <div class="card-month-val" id="cardMonth">—</div>
+      </div>
+      <div class="card-dots">••••</div>
+    </div>
+  </div>
+</div>
+
+<!-- КНОПКИ -->
+<div class="actions">
+  <div class="action-btn accent-btn" onclick="openCalendar()">
+    <div class="action-icon">📆</div>
+    <div class="action-label">График смен</div>
+    <div class="action-sub">Открыть календарь</div>
+  </div>
+  <div class="action-btn" id="shiftCountBtn">
+    <div class="action-icon">📋</div>
+    <div class="action-label">Смены</div>
+    <div class="action-sub" id="shiftCountSub">в этом месяце</div>
+  </div>
+</div>
+
+<!-- СТАТИСТИКА -->
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-val day" id="statDay">—</div>
+    <div class="stat-label">☀️ День</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val night" id="statNight">—</div>
+    <div class="stat-label">🌙 Ночь</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-val total" id="statTotal">—</div>
+    <div class="stat-label">📅 Всего</div>
+  </div>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) { tg.ready(); tg.expand(); }
+
+const CALENDAR_URL = 'https://bejteldaniil2-dev.github.io/shift-calendar/calendar.html';
+const MONTH_RU = ['Январь','Февраль','Март','Апрель','Май','Июнь',
+                  'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MONTH_RU_GEN = ['Январь','Февраль','Март','Апрель','Май','Июнь',
+                      'Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const DAY_RU = ['вс','пн','вт','ср','чт','пт','сб'];
+
+/* __HOME_DATA_START__ */
+const HOME_DATA = {"shifts":[],"net_salary":null,"month":null};
+/* __HOME_DATA_END__ */
+
+function openCalendar() {
+  window.location.href = CALENDAR_URL;
+}
+
+function formatDate() {
+  const now = new Date();
+  const days = ['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'];
+  return `${days[now.getDay()]}, ${now.getDate()} ${MONTH_RU[now.getMonth()]}`;
+}
+
+function getToday() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+}
+
+function renderNextShift(shifts) {
+  const today = getToday();
+  const upcoming = shifts
+    .filter(s => s.date >= today)
+    .sort((a,b) => a.date.localeCompare(b.date));
+
+  const el = document.getElementById('nextShift');
+  const icon = document.getElementById('pillIcon');
+  const main = document.getElementById('pillMain');
+  const sub  = document.getElementById('pillSub');
+  const badge = document.getElementById('pillBadge');
+
+  if (!upcoming.length) {
+    icon.textContent = '😴';
+    main.textContent = 'Смен не запланировано';
+    sub.textContent = 'Добавьте смены в боте';
+    badge.textContent = 'Отдых';
+    badge.className = 'pill-badge badge-off';
+    return;
+  }
+
+  const next = upcoming[0];
+  const isDay = next.type === 'день';
+  const isToday = next.date === today;
+  const [y,m,d] = next.date.split('-');
+  const dateObj = new Date(y, m-1, d);
+  const dayName = DAY_RU[dateObj.getDay()];
+
+  icon.textContent = isDay ? '☀️' : '🌙';
+
+  if (isToday) {
+    main.textContent = 'Сегодня';
+    el.classList.add('today-pill');
+    badge.className = 'pill-badge badge-today';
+    badge.textContent = 'Сейчас';
+  } else {
+    // считаем сколько дней осталось
+    const todayObj = new Date(today);
+    const nextObj  = new Date(next.date);
+    const diff = Math.round((nextObj - todayObj) / 86400000);
+    main.textContent = `${d}.${m} (${dayName})`;
+    el.classList.add(isDay ? 'day-pill' : 'night-pill');
+    badge.className = `pill-badge ${isDay ? 'badge-day' : 'badge-night'}`;
+    badge.textContent = diff === 1 ? 'Завтра' : `Через ${diff} дн.`;
+  }
+  sub.textContent = `${next.time_start} — ${next.time_end} · ${next.type}`;
+}
+
+function renderCard(data) {
+  const now = new Date();
+  const monthLabel = `${MONTH_RU[now.getMonth()]} ${now.getFullYear()}`;
+  document.getElementById('cardMonth').textContent = monthLabel;
+
+  const balanceEl = document.getElementById('cardBalance');
+  const subEl = document.getElementById('cardSub');
+
+  if (data.net_salary !== null && data.net_salary > 0) {
+    const formatted = Math.round(data.net_salary).toLocaleString('ru-RU');
+    balanceEl.innerHTML = `<span class="balance-amount">${formatted}</span><span class="balance-currency">₽</span>`;
+    subEl.textContent = 'чистыми за месяц';
+  } else if (data.net_salary === 0) {
+    balanceEl.innerHTML = `<span class="balance-amount">0</span><span class="balance-currency">₽</span>`;
+    subEl.textContent = 'смен ещё нет';
+  } else {
+    balanceEl.innerHTML = `<span class="balance-loading">Нет данных</span>`;
+    subEl.textContent = 'добавьте смены в бот';
+  }
+}
+
+function renderStats(shifts) {
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const thisMonth = shifts.filter(s => s.date.startsWith(ym));
+  const day   = thisMonth.filter(s => s.type === 'день').length;
+  const night = thisMonth.filter(s => s.type === 'ночь').length;
+  const total = day + night;
+  document.getElementById('statDay').textContent   = day;
+  document.getElementById('statNight').textContent = night;
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('shiftCountSub').textContent = `${total} смен в месяце`;
+}
+
+function init() {
+  document.getElementById('headerDate').textContent = formatDate();
+
+  const shifts    = HOME_DATA.shifts    || [];
+  const netSalary = HOME_DATA.net_salary;
+
+  renderNextShift(shifts);
+  renderCard({ net_salary: netSalary });
+  renderStats(shifts);
+}
+
+init();
+</script>
+</body>
+</html>
