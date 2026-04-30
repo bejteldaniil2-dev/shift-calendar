@@ -347,7 +347,7 @@ const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); }
 
 // ── PARSE DATA ──────────────────────────────────────────────────────────────
-let allShifts = {}; // { "YYYY-MM-DD": {type, time_start, time_end, earned} }
+let allShifts = {}; // { "YYYY-MM-DD": {type, time_start, time_end} }
 let months = [];
 let curIdx = 0;
 
@@ -356,30 +356,63 @@ let curIdx = 0;
 const EMBEDDED_SHIFTS = [];
 /* __SHIFTS_END__ */
 
-function parseData() {
-  // Данные передаются через URL (?data=... — query param, т.к. Telegram Mini App обрезает #hash)
-  // Также поддерживаем старый формат #data=... для совместимости
+// URL и секрет API — обновляются автоматически ботом при каждом запуске
+const API_BASE = "";
+const API_SECRET = "esnow_secret_2024";
+
+function buildMonthIndex() {
+  const monthSet = new Set(Object.keys(allShifts).map(d => d.slice(0,7)));
+  const today = new Date();
+  monthSet.add(`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`);
+  months = Array.from(monthSet).sort();
+  curIdx = months.indexOf(`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`);
+  if (curIdx < 0) curIdx = months.length - 1;
+}
+
+function parseFromUrl() {
+  // Читаем ?data=... (query param) — основной способ через кнопку в боте
   try {
-    // Сначала пробуем query string (?data=...)
     const urlParams = new URLSearchParams(location.search);
     let b64str = urlParams.get('data');
-
-    // Фолбэк: хэш (#data=...)
+    // Фолбэк: #data=...
     if (!b64str) {
       const match = location.hash.match(/[#&]data=([^&]+)/);
       if (match) b64str = match[1];
     }
-
     if (b64str) {
       let b64 = b64str.replace(/-/g,'+').replace(/_/g,'/');
       while (b64.length % 4) b64 += '=';
       const json = JSON.parse(atob(b64));
       if (json.shifts) json.shifts.forEach(s => { allShifts[s.date] = s; });
+      return true;
     }
   } catch(e) { console.warn('URL parse error:', e); }
+  return false;
+}
 
-  // demo=1 — тестовые данные для разработки
-  if (location.hash.includes('demo=1')) {
+async function fetchFromApi(userId) {
+  if (!API_BASE) return false;
+  try {
+    const secretParam = API_SECRET ? `&secret=${encodeURIComponent(API_SECRET)}` : "";
+    const resp = await fetch(`${API_BASE}/api/shifts?user_id=${userId}${secretParam}`);
+    if (!resp.ok) return false;
+    const json = await resp.json();
+    if (json.shifts) {
+      allShifts = {};
+      json.shifts.forEach(s => { allShifts[s.date] = s; });
+      return true;
+    }
+  } catch(e) { console.warn('API fetch error:', e); }
+  return false;
+}
+
+async function initData() {
+  // Показываем скелетон пока грузятся данные
+  document.getElementById('grid').innerHTML =
+    Array(35).fill('<div class="cell empty shimmer" style="aspect-ratio:1"></div>').join('');
+
+  // demo=1 — тестовые данные
+  if (location.hash.includes('demo=1') || location.search.includes('demo=1')) {
     const now = new Date(); const y = now.getFullYear(), m = now.getMonth();
     [[1,'день'],[2,'день'],[5,'ночь'],[6,'ночь'],[13,'день'],
      [14,'день'],[19,'ночь'],[20,'ночь'],[25,'день'],[26,'день']]
@@ -387,15 +420,23 @@ function parseData() {
       const date = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       allShifts[date] = {type, time_start: type==='день'?'08:30':'20:30', time_end: type==='день'?'20:30':'08:30'};
     });
+    buildMonthIndex(); render(); return;
   }
 
-  // Собираем список месяцев
-  const monthSet = new Set(Object.keys(allShifts).map(d => d.slice(0,7)));
-  const today = new Date();
-  monthSet.add(`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`);
-  months = Array.from(monthSet).sort();
-  curIdx = months.indexOf(`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}`);
-  if (curIdx < 0) curIdx = months.length - 1;
+  // Способ 1: данные в URL (?data=...) — кнопка из чата
+  if (parseFromUrl()) {
+    buildMonthIndex(); render(); return;
+  }
+
+  // Способ 2: API запрос по user_id из Telegram initData
+  const userId = tg?.initDataUnsafe?.user?.id;
+  if (userId && API_BASE) {
+    const ok = await fetchFromApi(userId);
+    if (ok) { buildMonthIndex(); render(); return; }
+  }
+
+  // Нет данных — показываем пустой календарь с подсказкой
+  buildMonthIndex(); render();
 }
 
 // ── RENDER ──────────────────────────────────────────────────────────────────
@@ -561,8 +602,7 @@ document.querySelector('.swipe-area')?.addEventListener('touchend', e => {
 }, {passive:true});
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
-parseData();
-render();
+initData();
 </script>
 </body>
 </html>
