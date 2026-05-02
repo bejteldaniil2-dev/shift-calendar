@@ -121,8 +121,6 @@
     justify-content: space-between;
   }
   .card-tap-hint {
-    position: absolute;
-    bottom: 26px; right: 28px;
     font-size: 11px;
     font-weight: 700;
     letter-spacing: .06em;
@@ -136,6 +134,7 @@
     cursor: pointer;
     padding: 4px 0;
     z-index: 2;
+    line-height: 1;
   }
   .card-tap-hint:active { opacity: .6; }
   @keyframes shimmerText {
@@ -547,7 +546,6 @@
 <!-- БАНКОВСКАЯ КАРТА -->
 <div class="card-wrap">
   <div class="bank-card">
-    <div class="card-tap-hint" onclick="openFinances()">Подробнее →</div>
     <div class="card-top">
       <div class="card-name">ESnow job</div>
       <div class="card-chip"></div>
@@ -569,6 +567,9 @@
         </div>
       </div>
       <div class="card-dots">••••</div>
+    </div>
+    <div style="margin-top:12px;border-top:1px solid #f5a62318;padding-top:10px;position:relative;z-index:1;">
+      <div class="card-tap-hint" onclick="openFinances()">Подробнее →</div>
     </div>
   </div>
 </div>
