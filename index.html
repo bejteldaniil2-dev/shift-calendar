@@ -831,16 +831,26 @@ function toggleToilet() {
   onToiletChange(cb.checked);
 }
 
-function onToiletChange(enabled) {
+async function onToiletChange(enabled) {
+  // Сразу обновляем UI
   document.getElementById('toiletSub').textContent =
     enabled ? '✅ Включено — каждый час в смену' : 'Выключено';
-  if (tg) {
-    tg.sendData(JSON.stringify({ action: 'toilet_toggle', enabled }));
-  }
+
+  // Сохраняем через API (не sendData — оно закрывает Mini App)
+  const userId = tg?.initDataUnsafe?.user?.id;
+  if (!userId || !API_BASE) return;
+  try {
+    const secret = API_SECRET ? `&secret=${encodeURIComponent(API_SECRET)}` : '';
+    await fetch(
+      `${API_BASE}/api/toilet?user_id=${userId}&enabled=${enabled ? 1 : 0}${secret}`,
+      { headers: { "ngrok-skip-browser-warning": "true" } }
+    );
+  } catch(e) { console.warn('Toilet toggle error:', e); }
 }
 
 function initToilet(val) {
-  const enabled = (val ?? liveData.toilet_reminders) === 1;
+  // val приходит как 0 или 1 из liveData
+  const enabled = val === 1;
   document.getElementById('toiletToggle').checked = enabled;
   document.getElementById('toiletSub').textContent =
     enabled ? '✅ Включено — каждый час в смену' : 'Выключено';
