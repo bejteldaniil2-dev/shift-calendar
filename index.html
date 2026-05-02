@@ -114,11 +114,28 @@
     background: linear-gradient(135deg, #1a1208 0%, #1e1e24 40%, #0e0e16 100%);
     border: 1.5px solid #f5a62322;
     box-shadow: 0 8px 40px #f5a62312, 0 2px 8px #00000060;
-    cursor: default;
+    cursor: pointer;
     min-height: 180px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    transition: transform .15s, box-shadow .15s, border-color .2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bank-card:active {
+    transform: scale(.975);
+    box-shadow: 0 4px 20px #f5a62318, 0 1px 4px #00000080;
+    border-color: #f5a62355;
+  }
+  .card-tap-hint {
+    position: absolute;
+    bottom: 10px; right: 14px;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #f5a62340;
+    z-index: 2;
   }
 
   /* Glow orbs */
@@ -379,6 +396,124 @@
   .apple-toggle input:checked + .apple-slider::before {
     transform: translateX(20px);
   }
+  /* ── FINANCE SCREEN ── */
+  .fin-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 200;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    transform: translateY(100%);
+    transition: transform .35s cubic-bezier(.32,0,.67,0);
+  }
+  .fin-screen.open {
+    transform: translateY(0);
+    transition: transform .35s cubic-bezier(.33,1,.68,1);
+  }
+  .fin-header {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--bg);
+    padding: 16px 20px 12px;
+    display: flex; align-items: center; gap: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .fin-back {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--surface); border: 1.5px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; cursor: pointer; flex-shrink: 0;
+    transition: background .15s, transform .1s;
+  }
+  .fin-back:active { background: var(--border); transform: scale(.9); }
+  .fin-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 14px; font-weight: 700;
+    letter-spacing: .04em;
+  }
+  .fin-hero {
+    margin: 16px 20px 0;
+    background: linear-gradient(135deg, #0d1a0d 0%, #1e1e24 60%);
+    border: 1.5px solid #30d15830;
+    border-radius: 20px; padding: 22px;
+    position: relative; overflow: hidden;
+  }
+  .fin-hero::before {
+    content: ''; position: absolute; top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, #30d15820 0%, transparent 70%);
+  }
+  .fin-hero-label {
+    font-size: 10px; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; color: #30d158aa; margin-bottom: 6px;
+  }
+  .fin-hero-amount {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 36px; font-weight: 900;
+    color: var(--text); line-height: 1; margin-bottom: 4px;
+    display: flex; align-items: baseline; gap: 6px;
+  }
+  .fin-hero-amount span { font-size: 18px; color: var(--green); opacity: .8; }
+  .fin-hero-sub { font-size: 12px; color: var(--muted); }
+  .fin-month-nav {
+    display: flex; gap: 8px; padding: 14px 20px 0;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .fin-month-nav::-webkit-scrollbar { display: none; }
+  .fin-month-chip {
+    flex-shrink: 0; background: var(--surface);
+    border: 1.5px solid var(--border); border-radius: 20px;
+    padding: 7px 16px; font-size: 12px; font-weight: 600;
+    color: var(--muted); cursor: pointer; transition: all .15s;
+    white-space: nowrap;
+  }
+  .fin-month-chip.active {
+    background: #30d15820; border-color: #30d15860; color: var(--green);
+  }
+  .fin-cards {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; padding: 14px 20px 0;
+  }
+  .fin-card {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 14px; padding: 14px;
+  }
+  .fin-card-full { grid-column: 1 / -1; }
+  .fin-card-label {
+    font-size: 10px; font-weight: 600; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+  }
+  .fin-card-val {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 20px; font-weight: 700; line-height: 1;
+  }
+  .fin-card-val.green { color: var(--green); }
+  .fin-card-val.orange { color: var(--day-clr); }
+  .fin-card-val.red { color: #ff6b6b; }
+  .fin-card-val.blue { color: var(--night-clr); }
+  .fin-card-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .fin-section-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 10px; font-weight: 600; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted);
+    padding: 16px 20px 8px;
+  }
+  .fin-expense-list { padding: 0 20px 32px; display: flex; flex-direction: column; gap: 8px; }
+  .fin-exp-row {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .fin-exp-row.advance-row { border-left: 3px solid var(--green); }
+  .fin-exp-icon { font-size: 18px; flex-shrink: 0; }
+  .fin-exp-info { flex: 1; }
+  .fin-exp-comment { font-weight: 600; font-size: 13px; }
+  .fin-exp-date { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .fin-exp-amount {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 14px; font-weight: 700; color: #ff6b6b; flex-shrink: 0;
+  }
+  .fin-empty { text-align: center; padding: 32px 20px; color: var(--muted); font-size: 13px; }
 </style>
 </head>
 <body>
@@ -401,7 +536,8 @@
 
 <!-- БАНКОВСКАЯ КАРТА -->
 <div class="card-wrap">
-  <div class="bank-card">
+  <div class="bank-card" onclick="openFinances()">
+    <div class="card-tap-hint">Подробнее →</div>
     <div class="card-top">
       <div class="card-name">ESnow job</div>
       <div class="card-chip"></div>
@@ -470,6 +606,52 @@
     <div class="stat-val total" id="statTotal">—</div>
     <div class="stat-label">📅 Всего</div>
   </div>
+</div>
+
+<!-- ФИНАНСОВЫЙ ЭКРАН -->
+<div class="fin-screen" id="finScreen">
+  <div class="fin-header">
+    <div class="fin-back" onclick="closeFinances()">‹</div>
+    <div class="fin-title">💰 Финансы</div>
+  </div>
+
+  <!-- Герой — чистыми -->
+  <div class="fin-hero">
+    <div class="fin-hero-label">Чистыми за месяц</div>
+    <div class="fin-hero-amount" id="finNet">— <span>₽</span></div>
+    <div class="fin-hero-sub" id="finNetSub">выбери месяц</div>
+  </div>
+
+  <!-- Выбор месяца -->
+  <div class="fin-month-nav" id="finMonthNav"></div>
+
+  <!-- Карточки -->
+  <div class="fin-cards">
+    <div class="fin-card">
+      <div class="fin-card-label">💵 Заработано</div>
+      <div class="fin-card-val orange" id="finEarned">—</div>
+      <div class="fin-card-sub">до вычетов</div>
+    </div>
+    <div class="fin-card">
+      <div class="fin-card-label">🛒 Расходы</div>
+      <div class="fin-card-val red" id="finExpenses">—</div>
+      <div class="fin-card-sub">еда и прочее</div>
+    </div>
+    <div class="fin-card">
+      <div class="fin-card-label">💳 Аванс</div>
+      <div class="fin-card-val blue" id="finAdvance">—</div>
+      <div class="fin-card-sub">выдан на работе</div>
+    </div>
+    <div class="fin-card">
+      <div class="fin-card-label">📅 Смен</div>
+      <div class="fin-card-val" id="finShifts" style="color:var(--text)">—</div>
+      <div class="fin-card-sub" id="finShiftsSub">в месяце</div>
+    </div>
+  </div>
+
+  <!-- Расходы детально -->
+  <div class="fin-section-title" id="finExpTitle" style="display:none">Расходы и авансы</div>
+  <div class="fin-expense-list" id="finExpList"></div>
 </div>
 
 <script>
@@ -679,6 +861,142 @@ async function init() {
   renderNextShift(shifts);
   renderStats(shifts);
   initToilet(liveData.toilet_reminders);
+}
+
+// ── ФИНАНСОВЫЙ ЭКРАН ─────────────────────────────────────────────────────────
+let financeData = null;
+let finCurrentMonth = '';
+
+async function openFinances() {
+  document.getElementById('finScreen').classList.add('open');
+  if (tg) tg.BackButton?.show();
+  if (!financeData) await loadFinanceData();
+  renderFinanceScreen();
+}
+
+function closeFinances() {
+  document.getElementById('finScreen').classList.remove('open');
+  if (tg) tg.BackButton?.hide();
+}
+
+// Кнопка назад в Telegram
+if (tg) {
+  tg.BackButton?.onClick(() => closeFinances());
+}
+
+async function loadFinanceData() {
+  const userId = tg?.initDataUnsafe?.user?.id;
+  if (!userId || !API_BASE) {
+    // Используем HOME_DATA как фолбэк
+    financeData = buildFinanceFromHomeData();
+    return;
+  }
+  try {
+    const secret = API_SECRET ? `&secret=${encodeURIComponent(API_SECRET)}` : '';
+    const resp = await fetch(`${API_BASE}/api/finance?user_id=${userId}${secret}`, {
+      headers: { "ngrok-skip-browser-warning": "true" }
+    });
+    if (resp.ok) { financeData = await resp.json(); return; }
+  } catch(e) {}
+  financeData = buildFinanceFromHomeData();
+}
+
+function buildFinanceFromHomeData() {
+  // Строим данные из HOME_DATA если API недоступен
+  const months = {};
+  const netByMonth = HOME_DATA.net_by_month || {};
+  const shifts = HOME_DATA.shifts || [];
+  const allYms = new Set([...Object.keys(netByMonth), ...shifts.map(s => s.date.slice(0,7))]);
+  allYms.forEach(ym => {
+    const ms = shifts.filter(s => s.date.startsWith(ym));
+    const earned = ms.reduce((a,s) => a + (s.earned || 0), 0);
+    months[ym] = {
+      earned: earned,
+      expenses: earned - (netByMonth[ym] || 0),
+      advance: 0,
+      net: netByMonth[ym] || 0,
+      day: ms.filter(s => s.type === 'день').length,
+      night: ms.filter(s => s.type === 'ночь').length,
+      expense_details: []
+    };
+  });
+  return { months, percent: 0.09 };
+}
+
+function renderFinanceScreen() {
+  if (!financeData) return;
+  const months = financeData.months || {};
+  const sortedMonths = Object.keys(months).sort().reverse();
+  const now = new Date();
+  const curYm = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  if (!finCurrentMonth) finCurrentMonth = sortedMonths[0] || curYm;
+
+  // Навигация по месяцам
+  const nav = document.getElementById('finMonthNav');
+  const available = sortedMonths.length ? sortedMonths : [curYm];
+  nav.innerHTML = available.map(ym => {
+    const [y, m] = ym.split('-').map(Number);
+    const label = `${MONTH_RU[m-1].slice(0,3)} ${y}`;
+    return `<div class="fin-month-chip ${ym === finCurrentMonth ? 'active' : ''}"
+      onclick="selectFinMonth('${ym}')">${label}</div>`;
+  }).join('');
+
+  selectFinMonth(finCurrentMonth);
+}
+
+function selectFinMonth(ym) {
+  finCurrentMonth = ym;
+  // Обновляем чипы
+  document.querySelectorAll('.fin-month-chip').forEach(c => {
+    const [y, m] = ym.split('-').map(Number);
+    const label = `${MONTH_RU[m-1].slice(0,3)} ${y}`;
+    c.classList.toggle('active', c.textContent.trim() === label);
+  });
+
+  const months = financeData?.months || {};
+  const d = months[ym] || { earned: 0, expenses: 0, advance: 0, net: 0, day: 0, night: 0, expense_details: [] };
+  const [y, m] = ym.split('-').map(Number);
+  const monthLabel = `${MONTH_RU[m-1]} ${y}`;
+
+  // Герой
+  document.getElementById('finNet').innerHTML = d.net !== 0
+    ? `${Math.round(d.net).toLocaleString('ru-RU')} <span>₽</span>`
+    : `— <span>₽</span>`;
+  document.getElementById('finNetSub').textContent = monthLabel;
+
+  // Карточки
+  document.getElementById('finEarned').textContent   = d.earned > 0 ? `${Math.round(d.earned).toLocaleString('ru-RU')} ₽` : '—';
+  document.getElementById('finExpenses').textContent = d.expenses > 0 ? `${Math.round(d.expenses).toLocaleString('ru-RU')} ₽` : '—';
+  document.getElementById('finAdvance').textContent  = d.advance > 0 ? `${Math.round(d.advance).toLocaleString('ru-RU')} ₽` : '—';
+  const total = (d.day || 0) + (d.night || 0);
+  document.getElementById('finShifts').textContent  = total || '—';
+  document.getElementById('finShiftsSub').textContent = total
+    ? `${d.day || 0} дн. + ${d.night || 0} ноч.` : 'в месяце';
+
+  // Список расходов
+  const expList = document.getElementById('finExpList');
+  const expTitle = document.getElementById('finExpTitle');
+  const details = d.expense_details || [];
+  if (!details.length) {
+    expTitle.style.display = 'none';
+    expList.innerHTML = '<div class="fin-empty">Расходов за этот месяц нет</div>';
+    return;
+  }
+  expTitle.style.display = 'block';
+  expList.innerHTML = details.map(e => {
+    const isAdv = e.category === 'аванс' || (e.comment && e.comment.toLowerCase().includes('аванс'));
+    const [ey, em, ed] = (e.date || '').split('-');
+    const dateStr = ed && em ? `${ed}.${em}` : e.date;
+    const comment = e.comment || e.category || 'Расход';
+    return `<div class="fin-exp-row ${isAdv ? 'advance-row' : ''}">
+      <div class="fin-exp-icon">${isAdv ? '💳' : '🛒'}</div>
+      <div class="fin-exp-info">
+        <div class="fin-exp-comment">${comment}</div>
+        <div class="fin-exp-date">${dateStr}</div>
+      </div>
+      <div class="fin-exp-amount">−${Math.round(e.amount).toLocaleString('ru-RU')} ₽</div>
+    </div>`;
+  }).join('');
 }
 
 init();
