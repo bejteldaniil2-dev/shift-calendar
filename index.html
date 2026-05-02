@@ -114,29 +114,42 @@
     background: linear-gradient(135deg, #1a1208 0%, #1e1e24 40%, #0e0e16 100%);
     border: 1.5px solid #f5a62322;
     box-shadow: 0 8px 40px #f5a62312, 0 2px 8px #00000060;
-    cursor: pointer;
+    cursor: default;
     min-height: 180px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: transform .15s, box-shadow .15s, border-color .2s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .bank-card:active {
-    transform: scale(.975);
-    box-shadow: 0 4px 20px #f5a62318, 0 1px 4px #00000080;
-    border-color: #f5a62355;
   }
   .card-tap-hint {
     position: absolute;
-    bottom: 10px; right: 14px;
-    font-size: 9px;
-    font-weight: 600;
+    bottom: 26px; right: 28px;
+    font-size: 11px;
+    font-weight: 700;
     letter-spacing: .06em;
     text-transform: uppercase;
-    color: #f5a62340;
+    color: transparent;
+    background: linear-gradient(90deg, #f5a623, #ff6b35, #f5a623, #ff6b35);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: shimmerText 2.5s linear infinite;
+    cursor: pointer;
+    padding: 4px 0;
     z-index: 2;
   }
+  .card-tap-hint:active { opacity: .6; }
+  @keyframes shimmerText {
+    0%   { background-position: 200% center; }
+    100% { background-position: -200% center; }
+  }
+  .card-middle {
+    position: relative; z-index: 1;
+    margin-top: 18px;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: opacity .15s;
+  }
+  .card-middle:active { opacity: .7; }
 
   /* Glow orbs */
   .bank-card::before {
@@ -190,10 +203,7 @@
     opacity: .9;
   }
 
-  .card-middle {
-    position: relative; z-index: 1;
-    margin-top: 18px;
-  }
+
   .card-balance-label {
     font-size: 10px;
     font-weight: 600;
@@ -536,13 +546,13 @@
 
 <!-- БАНКОВСКАЯ КАРТА -->
 <div class="card-wrap">
-  <div class="bank-card" onclick="openFinances()">
-    <div class="card-tap-hint">Подробнее →</div>
+  <div class="bank-card">
+    <div class="card-tap-hint" onclick="openFinances()">Подробнее →</div>
     <div class="card-top">
       <div class="card-name">ESnow job</div>
       <div class="card-chip"></div>
     </div>
-    <div class="card-middle">
+    <div class="card-middle" onclick="openFinances()">
       <div class="card-balance-label">Зарплата чистыми</div>
       <div class="card-balance" id="cardBalance">
         <span class="balance-loading">···</span>
