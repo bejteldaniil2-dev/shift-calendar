@@ -588,18 +588,6 @@
   </div>
 </div>
 
-<!-- ИГРА -->
-<div style="padding: 0 20px 0; margin-top: 10px;">
-  <div class="action-btn" onclick="openGame()" style="flex-direction:row; align-items:center; gap:14px; padding:14px 18px; border-color:#4a3a6a44; background:linear-gradient(135deg,#110e1a,#1e1e24);">
-    <div style="font-size:28px; flex-shrink:0;">🃏</div>
-    <div style="flex:1;">
-      <div class="action-label" style="color:#c084fc;">Пасьянс Клондайк</div>
-      <div class="action-sub">Играть в перерыве между сменами</div>
-    </div>
-    <div style="font-size:18px; color:#6b6b7e;">›</div>
-  </div>
-</div>
-
 <!-- НАПОМИНАНИЯ ТУАЛЕТ -->
 <div class="toilet-card" onclick="toggleToilet()">
   <div class="toilet-left">
@@ -700,10 +688,6 @@ const API_SECRET = "esnow_secret_2024";
 
 function openCalendar() {
   window.location.href = CALENDAR_URL;
-}
-
-function openGame() {
-  window.open('https://lapserdak.ru/klondike', '_blank');
 }
 
 function formatDate() {
