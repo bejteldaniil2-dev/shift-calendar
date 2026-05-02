@@ -729,46 +729,32 @@ function openShiftModal(dateStr, shift, isToday) {
 
 async function addShift(dateStr, type) {
   closeModal();
-  const userId = tg?.initDataUnsafe?.user?.id;
-  if (!userId || !API_BASE) {
-    showToast('❌ Нет подключения к боту'); return;
-  }
   const timeStart = type === 'день' ? '08:30' : '20:30';
   const timeEnd   = type === 'день' ? '20:30' : '08:30';
-  try {
-    showToast('⏳ Добавляем смену…');
-    const resp = await fetch(`${API_BASE}/api/schedule/add`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-      body: JSON.stringify({ user_id: userId, date: dateStr, type, time_start: timeStart, time_end: timeEnd, secret: API_SECRET })
-    });
-    if (resp.ok) {
-      allShifts[dateStr] = { type, time_start: timeStart, time_end: timeEnd };
-      buildMonthIndex(); render();
-      showToast(`✅ ${type === 'день' ? 'Дневная' : 'Ночная'} смена добавлена`);
-    } else { showToast('❌ Ошибка добавления'); }
-  } catch(e) { showToast('❌ Нет связи с ботом'); }
+
+  // Обновляем локально сразу
+  allShifts[dateStr] = { type, time_start: timeStart, time_end: timeEnd };
+  buildMonthIndex(); render();
+  showToast(`✅ ${type === 'день' ? 'Дневная' : 'Ночная'} смена добавлена`);
+
+  // Отправляем боту через Telegram
+  if (tg) {
+    tg.sendData(JSON.stringify({ action: 'add_shift', date: dateStr, type, time_start: timeStart, time_end: timeEnd }));
+  }
 }
 
 async function deleteShift(dateStr) {
   closeModal();
-  const userId = tg?.initDataUnsafe?.user?.id;
-  if (!userId || !API_BASE) {
-    showToast('❌ Нет подключения к боту'); return;
+
+  // Обновляем локально сразу
+  delete allShifts[dateStr];
+  buildMonthIndex(); render();
+  showToast('✅ Смена удалена');
+
+  // Отправляем боту через Telegram
+  if (tg) {
+    tg.sendData(JSON.stringify({ action: 'delete_shift', date: dateStr }));
   }
-  try {
-    showToast('⏳ Удаляем смену…');
-    const resp = await fetch(`${API_BASE}/api/schedule/delete`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-      body: JSON.stringify({ user_id: userId, date: dateStr, secret: API_SECRET })
-    });
-    if (resp.ok) {
-      delete allShifts[dateStr];
-      buildMonthIndex(); render();
-      showToast('✅ Смена удалена');
-    } else { showToast('❌ Ошибка удаления'); }
-  } catch(e) { showToast('❌ Нет связи с ботом'); }
 }
 
 // ── TOAST ────────────────────────────────────────────────────────────────────
