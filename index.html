@@ -523,6 +523,108 @@
     font-size: 14px; font-weight: 700; color: #ff6b6b; flex-shrink: 0;
   }
   .fin-empty { text-align: center; padding: 32px 20px; color: var(--muted); font-size: 13px; }
+
+  /* ── PLUS BUTTON ON CARD ── */
+  .fin-card { position: relative; }
+  .fin-card-plus {
+    position: absolute; top: 10px; right: 10px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: #ffffff14; border: 1.5px solid #ffffff20;
+    color: var(--text); font-size: 16px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: background .15s, transform .1s;
+    flex-shrink: 0;
+  }
+  .fin-card-plus:active { background: #ffffff28; transform: scale(.9); }
+
+  /* ── ADD MODAL ── */
+  .add-modal-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(0,0,0,.65); backdrop-filter: blur(4px);
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  .add-modal-overlay.open { display: flex; }
+  .add-modal {
+    width: 100%; max-width: 480px;
+    background: var(--surface);
+    border-radius: 24px 24px 0 0;
+    border-top: 1.5px solid var(--border);
+    padding: 0 0 32px;
+    animation: slideUp .3s cubic-bezier(.33,1,.68,1) both;
+  }
+  @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+  .modal-handle {
+    width: 40px; height: 4px; border-radius: 2px;
+    background: var(--border); margin: 12px auto 0;
+  }
+  .modal-header {
+    padding: 16px 20px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 14px; font-weight: 700;
+  }
+  .modal-close {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--card); border: 1.5px solid var(--border);
+    font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); transition: background .15s;
+  }
+  .modal-close:active { background: var(--border); }
+  .modal-body { padding: 16px 20px 0; display: flex; flex-direction: column; gap: 12px; }
+  .modal-field label {
+    display: block; font-size: 10px; font-weight: 600;
+    letter-spacing: .07em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 6px;
+  }
+  .modal-input {
+    width: 100%; background: var(--card);
+    border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; color: var(--text);
+    font-family: 'Golos Text', sans-serif; font-size: 15px;
+    outline: none; transition: border-color .15s;
+    -webkit-appearance: none; appearance: none;
+  }
+  .modal-input:focus { border-color: var(--accent); }
+  .modal-date-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .modal-date-btn {
+    padding: 10px; border-radius: 10px; cursor: pointer;
+    background: var(--card); border: 1.5px solid var(--border);
+    color: var(--muted); font-size: 12px; font-weight: 600;
+    text-align: center; transition: all .15s;
+  }
+  .modal-date-btn.selected {
+    background: #f5a62318; border-color: var(--accent); color: var(--accent);
+  }
+  .modal-date-btn:active { opacity: .7; }
+  .modal-submit {
+    margin: 16px 20px 0;
+    width: calc(100% - 40px);
+    background: linear-gradient(135deg, #f5a623, #ff8c00);
+    border: none; border-radius: 14px;
+    padding: 15px; color: #000;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: opacity .15s, transform .1s;
+  }
+  .modal-submit:active { opacity: .8; transform: scale(.98); }
+  .modal-submit:disabled { opacity: .4; cursor: default; }
+  .modal-date-custom { margin-top: 8px; display: none; }
+  .modal-date-custom.show { display: block; }
+  .modal-toast {
+    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 12px; padding: 10px 18px;
+    font-size: 13px; font-weight: 600; color: var(--text);
+    z-index: 600; opacity: 0; transition: opacity .25s;
+    white-space: nowrap; pointer-events: none;
+  }
+  .modal-toast.show { opacity: 1; }
 </style>
 </head>
 <body>
@@ -647,11 +749,13 @@
       <div class="fin-card-label">🛒 Расходы</div>
       <div class="fin-card-val red" id="finExpenses">—</div>
       <div class="fin-card-sub">еда и прочее</div>
+      <div class="fin-card-plus" onclick="openAddModal('expense')" title="Добавить расход">+</div>
     </div>
     <div class="fin-card">
       <div class="fin-card-label">💳 Аванс</div>
       <div class="fin-card-val blue" id="finAdvance">—</div>
       <div class="fin-card-sub">выдан на работе</div>
+      <div class="fin-card-plus" onclick="openAddModal('advance')" title="Добавить аванс">+</div>
     </div>
     <div class="fin-card">
       <div class="fin-card-label">📅 Смен</div>
@@ -1021,6 +1125,158 @@ function selectFinMonth(ym) {
 }
 
 init();
+
+// ── ADD EXPENSE / ADVANCE MODAL ─────────────────────────────────────────────
+let addModalType = 'expense'; // 'expense' | 'advance'
+let addDateMode  = 'today';   // 'today' | 'other'
+
+function openAddModal(type) {
+  addModalType = type;
+  addDateMode  = 'today';
+  document.getElementById('modalTitle').textContent =
+    type === 'expense' ? '🛒 Добавить расход' : '💳 Добавить аванс';
+  document.getElementById('modalAmount').value  = '';
+  document.getElementById('modalComment').value = '';
+  // Дата по умолчанию — сегодня
+  const today = new Date();
+  const ymd = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  document.getElementById('modalCustomDate').value = ymd;
+  selectDate('today');
+  document.getElementById('addModalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('modalAmount').focus(), 350);
+}
+
+function closeAddModal() {
+  document.getElementById('addModalOverlay').classList.remove('open');
+}
+
+function overlayClick(e) {
+  if (e.target === document.getElementById('addModalOverlay')) closeAddModal();
+}
+
+function selectDate(mode) {
+  addDateMode = mode;
+  document.getElementById('dateBtnToday').classList.toggle('selected', mode === 'today');
+  document.getElementById('dateBtnOther').classList.toggle('selected', mode === 'other');
+  const wrap = document.getElementById('customDateWrap');
+  wrap.classList.toggle('show', mode === 'other');
+}
+
+function showToast(msg, ok) {
+  const el = document.getElementById('modalToast');
+  el.textContent = msg;
+  el.style.borderColor = ok ? 'var(--green)' : '#ff6b6b';
+  el.style.color = ok ? 'var(--green)' : '#ff6b6b';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+async function submitAddModal() {
+  const amountRaw = document.getElementById('modalAmount').value.trim().replace(',','.');
+  const amount = parseFloat(amountRaw);
+  if (!amount || amount <= 0) {
+    showToast('❌ Введи корректную сумму', false); return;
+  }
+  let date;
+  if (addDateMode === 'today') {
+    const now = new Date();
+    date = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  } else {
+    date = document.getElementById('modalCustomDate').value;
+    if (!date) { showToast('❌ Выбери дату', false); return; }
+  }
+  const comment = document.getElementById('modalComment').value.trim() || null;
+
+  const btn = document.getElementById('modalSubmit');
+  btn.disabled = true;
+  btn.textContent = 'Сохраняю…';
+
+  const userId = tg?.initDataUnsafe?.user?.id;
+  if (!userId || !API_BASE) {
+    showToast('❌ Нет соединения с сервером', false);
+    btn.disabled = false; btn.textContent = 'Сохранить'; return;
+  }
+
+  try {
+    const secret = API_SECRET ? `&secret=${encodeURIComponent(API_SECRET)}` : '';
+    const body = {
+      user_id: userId,
+      amount,
+      date,
+      category: addModalType === 'advance' ? 'аванс' : 'еда',
+      comment: comment || (addModalType === 'advance'
+        ? `Аванс от ${date.split('-').reverse().join('.')}`
+        : null),
+      secret: API_SECRET
+    };
+    const resp = await fetch(`${API_BASE}/api/expense/add`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+      body: JSON.stringify(body)
+    });
+    if (!resp.ok) throw new Error('Server error ' + resp.status);
+    const dd = date.split('-').reverse().join('.');
+    showToast(`✅ ${addModalType === 'advance' ? 'Аванс' : 'Расход'} ${Math.round(amount).toLocaleString('ru-RU')} ₽ сохранён (${dd})`, true);
+    closeAddModal();
+    // Перезагружаем финансовые данные
+    financeData = null;
+    await loadFinanceData();
+    renderFinanceScreen();
+  } catch(e) {
+    showToast('❌ Ошибка: ' + e.message, false);
+  }
+  btn.disabled = false;
+  btn.textContent = 'Сохранить';
+}
+
 </script>
+
+<!-- TOAST -->
+<div class="modal-toast" id="modalToast"></div>
+
+<!-- ADD EXPENSE / ADVANCE MODAL -->
+<div class="add-modal-overlay" id="addModalOverlay" onclick="overlayClick(event)">
+  <div class="add-modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Добавить расход</div>
+      <div class="modal-close" onclick="closeAddModal()">✕</div>
+    </div>
+    <div class="modal-body">
+      <!-- Сумма -->
+      <div class="modal-field">
+        <label>Сумма (₽)</label>
+        <input class="modal-input" id="modalAmount" type="number" inputmode="decimal"
+               placeholder="Например: 500" min="1" step="1">
+      </div>
+      <!-- Дата -->
+      <div class="modal-field">
+        <label>Дата</label>
+        <div class="modal-date-row">
+          <div class="modal-date-btn selected" id="dateBtnToday" onclick="selectDate('today')">
+            📅 Сегодня
+          </div>
+          <div class="modal-date-btn" id="dateBtnOther" onclick="selectDate('other')">
+            🗓 Другая дата
+          </div>
+        </div>
+        <div class="modal-date-custom" id="customDateWrap">
+          <input class="modal-input" id="modalCustomDate" type="date"
+                 style="margin-top:0; color-scheme:dark;">
+        </div>
+      </div>
+      <!-- Комментарий -->
+      <div class="modal-field">
+        <label>Комментарий (необязательно)</label>
+        <input class="modal-input" id="modalComment" type="text"
+               placeholder="Например: обед, продукты…" maxlength="100">
+      </div>
+    </div>
+    <button class="modal-submit" id="modalSubmit" onclick="submitAddModal()">
+      Сохранить
+    </button>
+  </div>
+</div>
+
 </body>
 </html>
